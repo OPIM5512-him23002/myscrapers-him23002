@@ -1,12 +1,12 @@
-name: Deploy materialize-master (CF Gen2 + Cloud Scheduler)
+name: Deploy materialize-master-llm (CF Gen2 + Cloud Scheduler)
 
 on:
   workflow_dispatch:
   push:
     branches: [ main ]
     paths:
-      - 'cloud_function/materialize-master/**'
-      - '.github/workflows/deploy-materialize-master.yml'
+      - 'cloud_function/materialize-master-llm/**'
+      - '.github/workflows/deploy-materialize-master-llm.yml'
 
 permissions:
   contents: read
@@ -15,8 +15,8 @@ permissions:
 env:
   PROJECT_ID: ${{ vars.PROJECT_ID }}
   REGION: ${{ vars.REGION }}
-  FUNCTION_NAME: materialize-master
-  FUNCTION_DIR: cloud_function/materialize-master
+  FUNCTION_NAME: materialize-master-llm
+  FUNCTION_DIR: cloud_function/materialize-master-llm
   ENTRY_POINT: materialize_http
   RUNTIME: python312
   BUCKET_NAME: ${{ vars.BUCKET_NAME }}
