@@ -156,7 +156,7 @@ def _safe_int(x):
 # -------------------- VERTEX AI CALL --------------------
 def _vertex_extract_fields(raw_text: str) -> dict:
     """
-    Ask Gemini to return JSON with exactly: price, year, make, model, mileage.
+    Ask Gemini to return JSON with exactly: price, year, make, model, type, fuel, mileage.
     """
     model = _get_vertex_model()
 
@@ -168,9 +168,11 @@ def _vertex_extract_fields(raw_text: str) -> dict:
             "year": {"type": "integer", "nullable": True},
             "make": {"type": "string", "nullable": True},
             "model": {"type": "string", "nullable": True},
+            "type": {"type": "string", "nullable": True},
+            "fuel": {"type": "string", "nullable": True},
             "mileage": {"type": "integer", "nullable": True},
         },
-        "required": ["price", "year", "make", "model", "mileage"]
+        "required": ["price", "year", "make", "model", "type", "fuel", "mileage"]
     }
 
     # System instruction (will be prepended to the prompt)
@@ -179,6 +181,8 @@ def _vertex_extract_fields(raw_text: str) -> dict:
         "Return a strict JSON object that conforms to the provided schema. "
         "If a value is not present, use null. "
         "Rules: integers for price/year/mileage; price in USD; mileage in miles; "
+        "for type extract the vehicle body type as written, if not listed, write null. "
+        "for fuel extract the exact word if present; it can be gas, electric etc. if empty write null. "
         "do not infer values not explicitly present; do not add extra keys."
     )
 
@@ -317,6 +321,8 @@ def llm_extract_http(request: Request):
                 "year": parsed.get("year"),
                 "make": parsed.get("make"),
                 "model": parsed.get("model"),
+                "type": parsed.get("type"),
+                "fuel": parsed.get("fuel"),
                 "mileage": parsed.get("mileage"),
                 "llm_provider": "vertex",
                 "llm_model": LLM_MODEL,
