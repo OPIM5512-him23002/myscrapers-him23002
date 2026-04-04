@@ -78,7 +78,7 @@ jobs:
             --no-allow-unauthenticated \
             --timeout="${TIMEOUT_SECONDS}" \
             --memory="${MEMORY}" \
-            "${SA_ARGS[@]}" \         
+            "${SA_ARGS[@]}" \
             --set-env-vars="PROJECT_ID=${PROJECT_ID},GCS_BUCKET=${BUCKET_NAME},DATA_KEY=${DATA_KEY},OUTPUT_PREFIX=${OUTPUT_PREFIX}"
 
       - name: Grant invoker to deployer & runtime SAs
