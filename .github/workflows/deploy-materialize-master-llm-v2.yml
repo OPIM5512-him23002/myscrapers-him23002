@@ -23,8 +23,7 @@ env:
   TIMEOUT_SECONDS: "1800"
   MEMORY: "2Gi"
   STRUCTURED_PREFIX: "structured"
-  # --- NEW FILENAME VARIABLE ---
-  OUTPUT_FILENAME: "listings_master_llm.csv"
+
   # -----------------------------
   RUNTIME_SA: ${{ vars.RUNTIME_SA }}
   DEPLOYER_SA: ${{ vars.DEPLOYER_SA }}
@@ -80,7 +79,7 @@ jobs:
             --timeout="${TIMEOUT_SECONDS}" \
             --memory="${MEMORY}" \
             "${SA_ARGS[@]}" \
-            --set-env-vars="PROJECT_ID=${PROJECT_ID},GCS_BUCKET=${BUCKET_NAME},STRUCTURED_PREFIX=${STRUCTURED_PREFIX},OUTPUT_FILENAME=${{ env.OUTPUT_FILENAME }}"
+            --set-env-vars="PROJECT_ID=${PROJECT_ID},GCS_BUCKET=${BUCKET_NAME},STRUCTURED_PREFIX=${STRUCTURED_PREFIX}"
 
       - name: Grant invoker to deployer & runtime SAs
         shell: bash
