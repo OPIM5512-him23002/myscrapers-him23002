@@ -1,4 +1,4 @@
-name: Deploy train-dt (CF Gen2 + Cloud Scheduler)
+name: Deploy train-dt-v2 (CF Gen2 + Cloud Scheduler)
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ permissions:
 env:
   PROJECT_ID: ${{ vars.PROJECT_ID }}
   REGION: ${{ vars.REGION }}
-  FUNCTION_NAME: train-dt
+  FUNCTION_NAME: train-dt-v2
   FUNCTION_DIR: cloud_function/train-dt-v2
   ENTRY_POINT: train_dt_http
   RUNTIME: python312
@@ -78,7 +78,7 @@ jobs:
             --no-allow-unauthenticated \
             --timeout="${TIMEOUT_SECONDS}" \
             --memory="${MEMORY}" \
-            "${SA_ARGS[@]}" \
+            "${SA_ARGS[@]}" \         
             --set-env-vars="PROJECT_ID=${PROJECT_ID},GCS_BUCKET=${BUCKET_NAME},DATA_KEY=${DATA_KEY},OUTPUT_PREFIX=${OUTPUT_PREFIX}"
 
       - name: Grant invoker to deployer & runtime SAs
