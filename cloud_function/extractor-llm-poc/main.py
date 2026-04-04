@@ -156,7 +156,7 @@ def _safe_int(x):
 # -------------------- VERTEX AI CALL --------------------
 def _vertex_extract_fields(raw_text: str) -> dict:
     """
-    Ask Gemini to return JSON with exactly: price, year, make, model, type, fuel, mileage.
+    Ask Gemini to return JSON with exactly: price, year, make, model, type, fuel, mileage, paint_color, city, state, zip_code.
     """
     model = _get_vertex_model()
 
@@ -171,8 +171,12 @@ def _vertex_extract_fields(raw_text: str) -> dict:
             "type": {"type": "string", "nullable": True},
             "fuel": {"type": "string", "nullable": True},
             "mileage": {"type": "integer", "nullable": True},
+            "paint_color": {"type": "string", "nullable": True},
+            "city": {"type": "string", "nullable": True},
+            "state": {"type": "string", "nullable": True},
+            "zip_code": {"type": "string", "nullable": True},
         },
-        "required": ["price", "year", "make", "model", "type", "fuel", "mileage"]
+        "required": ["price", "year", "make", "model", "type", "fuel", "mileage", "paint_color", "city", "state", "zip_code"]
     }
 
     # System instruction (will be prepended to the prompt)
@@ -183,6 +187,10 @@ def _vertex_extract_fields(raw_text: str) -> dict:
         "Rules: integers for price/year/mileage; price in USD; mileage in miles; "
         "for type extract the vehicle body type as written, if not listed, write null. "
         "for fuel extract the exact word if present; it can be gas, electric etc. if empty write null. "
+        "for paint_color extract the listed paint color if present; otherwise write null.  "
+        "for city/state/zip_code prefer the seller location or address shown in the listing, "
+        "For state, return the 2-letter abbreviation when clearly available, like CT or NY. "
+        "For zip_code, return it as a string. "
         "do not infer values not explicitly present; do not add extra keys."
     )
 
@@ -234,6 +242,10 @@ def _vertex_extract_fields(raw_text: str) -> dict:
 
     parsed["make"] = _norm_str(parsed.get("make"))
     parsed["model"] = _norm_str(parsed.get("model"))
+    parsed["paint_color"] = _norm_str(parsed.get("paint_color"))
+    parsed["city"] = _norm_str(parsed.get("city"))
+    parsed["state"] = _norm_str(parsed.get("state"))
+    parsed["zip_code"] = _norm_str(parsed.get("zip_code"))
 
     return parsed
 
@@ -324,6 +336,10 @@ def llm_extract_http(request: Request):
                 "type": parsed.get("type"),
                 "fuel": parsed.get("fuel"),
                 "mileage": parsed.get("mileage"),
+                "paint_color": parsed.get("paint_color"),
+                "city": parsed.get("city"),
+                "state": parsed.get("state"),
+                "zip_code": parsed.get("zip_code"),
                 "llm_provider": "vertex",
                 "llm_model": LLM_MODEL,
                 "llm_ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
