@@ -80,13 +80,13 @@ jobs:
           RUN_ID="${{ steps.download_rename.outputs.run_id }}"
           
           # Stage the newly created timestamped file
-          git add ${{ env.OUTPUT_DIR }}/$FILENAME
+          git add "${{ env.OUTPUT_DIR }}/$FILENAME"
           
-          # Commit the new file
-          git commit -m "🤖 Data Sync: Add hourly prediction file for run $RUN_ID"
-          
-          # FIX 2: Pull the latest remote changes and rebase to resolve 'rejected' error
-          git pull --rebase origin main 
-          
-          # Push the changes
+          if git diff --cached --quiet; then
+            echo "No changes to commit for run $RUN_ID"
+            exit 0
+          fi
+
+          git commit -m "🤖 Data Sync: Add hourly permutation importance file for run $RUN_ID"
+          git pull --rebase origin main
           git push
