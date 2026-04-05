@@ -1,0 +1,91 @@
+name: Data Sync Hourly PDP CSVs to Repo
+run-name: Syncing hourly PDP CSVs for ${{ github.ref_name }} by @${{ github.actor }}
+
+on:
+  schedule:
+    - cron: '47 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+env:
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
+  BUCKET_NAME: ${{ vars.BUCKET_NAME }}
+  WORKLOAD_IDENTITY_PROVIDER: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+  DEPLOYER_SA: ${{ vars.DEPLOYER_SA }}
+  GCS_PREDS_PREFIX: "structured/preds"
+  OUTPUT_DIR: "results/pdps"
+
+jobs:
+  sync_data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auth (WIF) and Setup gcloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOYER_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Find Latest Run ID and Download PDP CSVs
+        id: download_pdp
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          LATEST_RUN_DIR=$(gsutil ls -d gs://${BUCKET_NAME}/${GCS_PREDS_PREFIX}/*/ | sort | tail -1)
+          LATEST_RUN_ID=$(echo "$LATEST_RUN_DIR" | sed -E "s|gs://${BUCKET_NAME}/${GCS_PREDS_PREFIX}/||; s|/||")
+
+          LOCAL_RUN_DIR="${{ env.OUTPUT_DIR }}/$LATEST_RUN_ID"
+
+          echo "run_id=$LATEST_RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "dir=$LOCAL_RUN_DIR" >> "$GITHUB_OUTPUT"
+
+          echo "Detected latest run ID: $LATEST_RUN_ID"
+
+          mkdir -p "$LOCAL_RUN_DIR"
+
+          PDP_MATCHES=$(gsutil ls "gs://${BUCKET_NAME}/${GCS_PREDS_PREFIX}/${LATEST_RUN_ID}/pdp-llm-*.csv" 2>/dev/null || true)
+
+          if [[ -z "$PDP_MATCHES" ]]; then
+            echo "No PDP CSV files found for latest run"
+            exit 0
+          fi
+
+          gsutil -m cp "gs://${BUCKET_NAME}/${GCS_PREDS_PREFIX}/${LATEST_RUN_ID}/pdp-llm-*.csv" "$LOCAL_RUN_DIR/"
+
+          echo "Successfully copied PDP CSV files to $LOCAL_RUN_DIR"
+
+      - name: Commit and Push New Timestamped File
+        if: success()
+        run: |
+          set -euo pipefail
+
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+          RUN_ID="${{ steps.download_pdp.outputs.run_id }}"
+          LOCAL_RUN_DIR="${{ steps.download_pdp.outputs.dir }}"
+
+          if [[ -z "${LOCAL_RUN_DIR:-}" ]]; then
+            echo "No PDP directory to commit"
+            exit 0
+          fi
+
+          git add "$LOCAL_RUN_DIR"
+
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+
+          git commit -m "🤖 Data Sync: Add hourly PDP CSV files for run $RUN_ID"
+          git pull --rebase origin main
+          git push
